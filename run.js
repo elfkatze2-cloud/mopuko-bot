@@ -54,13 +54,16 @@ async function main() {
   } else {
     console.log("無効な入力です。夜（20:00）で進めます");
   }
-  rl.close();
+ rl.close();
 
-  fs.writeFileSync("output/slot.txt", slot);
+fs.writeFileSync("output/slot.txt", slot);
 
-  // テーマ選択
-  console.log("\n🎯 テーマを選択しています...");
-  execSync("node generate_theme.js", { stdio: "inherit" });
+// テーマ選択
+console.log("\n🎯 テーマを選択しています...");
+const { selectTheme } = require("./generate_theme");
+const selectedTheme = await selectTheme();
+if (!selectedTheme) return;
+fs.writeFileSync("output/selected_theme.txt", selectedTheme);
 
   // ① 台本生成
   console.log("\n📝 ステップ① 台本を生成しています...");

@@ -45,6 +45,9 @@
 - ✅ Geminiによる自動分析・改善案生成（analyze_analytics.js）
 - ✅ アップロード後に自動でAnalytics分析を実行しDiscordに通知
 - ✅ generate_theme.jsにAnalyticsデータを反映（伸びた動画の傾向をテーマ選定に活用）
+- ✅ Claude Code Companyの基本フロー確立（analytics_analysis.txt→Claude Codeに改善依頼→ブランチで実装→確認→マージ/キャンセル）
+- ✅ シーン4にCTA追加（コメント誘導・いいね登録促し・もぷ子口調・2〜3本に1回）
+- ✅ run.jsのreadline競合バグ修正（generate_theme.jsをrequireで呼び出すように変更）
 - ✅ BGM追加（remotion/public/sounds/bgm.mp3・volume: 0.05・ループ再生）
 - ✅ [pause]タグをElevenLabsに渡す前に除去（余計な音声の混入を防止）
 - ✅ ffmpegで末尾に0.3秒の無音を追加（シーン切り替わりの間を確保）
@@ -103,7 +106,7 @@ node upload_youtube.js
 - `video-bot/analyze_analytics.js`：analytics_report.jsonをGeminiで分析→改善案をoutput/analytics_analysis.txtに保存・Discordに通知
 - `video-bot/test_analytics.js`：Analytics APIのデバッグ用一時ファイル（削除可）
 - `video-bot/copy_audio.js`：音声ファイルをremotion/public/audioにコピー（手動実行用）
-- `video-bot/run.js`：モード選択→全ステップ統合実行
+- `video-bot/run.js`：モード選択→全ステップ統合実行（generate_theme.jsはrequireで呼び出し・stdin競合を回避）
 - `video-bot/client_secret.json`：Google OAuth認証情報（Gitに上げない）
 - `video-bot/token.json`：YouTubeアクセストークン（Gitに上げない）
 - `video-bot/output/slot.txt`：朝夜の選択結果を保存（他スクリプトから参照）
@@ -189,7 +192,6 @@ voice_settings: {
 - @remotion/google-fontsのバージョンが他のremotionパッケージと1つずれている（動作には影響なし）
 
 ## 次にやること（優先順位順）
-- [ ] Claude Code Companyの構築（analytics_analysis.txtをClaude Codeに渡して改善を実装・git branchでキャンセル可能な仕組み）
 - [ ] 効果音の挿入（シーン切り替わり時）※良い音源が見つかり次第
 - [ ] アフィリエイトリンクの自動選定・貼り付け
 - [ ] ギンバトキャラのLINEスタンプ作成・販売
@@ -202,3 +204,12 @@ voice_settings: {
 - 編集するファイルのフォルダパスも必ず明示してください
 - 作業の進捗をこまめに確認しながら進めてください
 - わかりにくい部分は完成形のコードを提示してください
+
+## Claude Code Companyの運用方法
+1. upload_youtube.js実行後にDiscordに分析結果が通知される
+2. output/analytics_analysis.txtをClaude Codeに渡す
+3. Claude Codeに改善を依頼する
+4. Claude Codeがブランチを作成して実装する（ブランチ名：improvement/xxxx）
+5. 動作確認してOKならマージ・NGならブランチ削除
+   - マージ：「improvement/xxxxをmainにマージしてください」
+   - キャンセル：「improvement/xxxxブランチを削除してください」
