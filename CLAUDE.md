@@ -41,6 +41,10 @@
 - ✅ 音声から再生成オプション（置換済みscript_for_audio.jsonを手動編集可能）
 - ✅ 画像を指定して再生成オプション（複数シーン番号指定可能）
 - ✅ 背景画像の構図をランダム化（正面・後ろ姿・アップ・引きなど）
+- ✅ YouTube Analytics + Data APIで動画パフォーマンス取得（fetch_analytics.js）
+- ✅ Geminiによる自動分析・改善案生成（analyze_analytics.js）
+- ✅ アップロード後に自動でAnalytics分析を実行しDiscordに通知
+- ✅ generate_theme.jsにAnalyticsデータを反映（伸びた動画の傾向をテーマ選定に活用）
 - ✅ BGM追加（remotion/public/sounds/bgm.mp3・volume: 0.05・ループ再生）
 - ✅ [pause]タグをElevenLabsに渡す前に除去（余計な音声の混入を防止）
 - ✅ ffmpegで末尾に0.3秒の無音を追加（シーン切り替わりの間を確保）
@@ -94,7 +98,10 @@ node upload_youtube.js
 - `video-bot/speed_up_audio.py`：ffmpegで1.3倍速変換＋末尾0.3秒無音追加
 - `video-bot/generate_images.js`：Gemini APIで画像生成（--scenesオプションで指定シーンのみ生成）
 - `video-bot/auth_youtube.js`：YouTube認証（OAuth2.0）
-- `video-bot/upload_youtube.js`：YouTubeに動画をアップロード・固定コメントをDiscordに送信
+- `video-bot/upload_youtube.js`：YouTubeに動画をアップロード・固定コメントをDiscordに送信・アップロード後に自動でAnalytics分析を実行
+- `video-bot/fetch_analytics.js`：YouTube Analytics API + Data APIで対象動画のデータを取得→output/analytics_report.jsonに保存
+- `video-bot/analyze_analytics.js`：analytics_report.jsonをGeminiで分析→改善案をoutput/analytics_analysis.txtに保存・Discordに通知
+- `video-bot/test_analytics.js`：Analytics APIのデバッグ用一時ファイル（削除可）
 - `video-bot/copy_audio.js`：音声ファイルをremotion/public/audioにコピー（手動実行用）
 - `video-bot/run.js`：モード選択→全ステップ統合実行
 - `video-bot/client_secret.json`：Google OAuth認証情報（Gitに上げない）
@@ -182,6 +189,7 @@ voice_settings: {
 - @remotion/google-fontsのバージョンが他のremotionパッケージと1つずれている（動作には影響なし）
 
 ## 次にやること（優先順位順）
+- [ ] Claude Code Companyの構築（analytics_analysis.txtをClaude Codeに渡して改善を実装・git branchでキャンセル可能な仕組み）
 - [ ] 効果音の挿入（シーン切り替わり時）※良い音源が見つかり次第
 - [ ] アフィリエイトリンクの自動選定・貼り付け
 - [ ] ギンバトキャラのLINEスタンプ作成・販売
