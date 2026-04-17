@@ -56,6 +56,24 @@ function getJapaneseSeason() {
   return "冬（12〜2月）";
 }
 
+function loadAnalyticsInsight() {
+  const reportPath = path.join(__dirname, "output", "analytics_report.json");
+  if (!fs.existsSync(reportPath)) return null;
+  const report = JSON.parse(fs.readFileSync(reportPath, "utf8"));
+  if (!report.videos || report.videos.length === 0) return null;
+
+  const videos = report.videos;
+  const top = videos[0];
+  const bottom = videos[videos.length - 1];
+
+  return `
+【自チャンネルの直近パフォーマンス】
+- 最も伸びた動画：「${top.title}」（再生数${top.views}・いいね${top.likes}）
+- 最も伸びなかった動画：「${bottom.title}」（再生数${bottom.views}・いいね${bottom.likes}）
+- 全動画の平均再生数：${Math.round(videos.reduce((s, v) => s + v.views, 0) / videos.length)}
+このデータを参考に、伸びやすいテーマを選んでください。`;
+}
+
 async function generateThemes() {
   const slot = fs.existsSync(path.join(__dirname, "output", "slot.txt"))
     ? fs.readFileSync(path.join(__dirname, "output", "slot.txt"), "utf8").trim()
@@ -103,6 +121,7 @@ ${last3.length > 0 ? last3.map((t) => `  ・${t}`).join("\n") : "  なし"}
 - 今月不足しているジャンル「${minGenre}」を少なくとも1つ含めてください
 - 同じジャンルは2つまでにしてください
 - 現在の季節は「${getJapaneseSeason()}」です。季節に合ったテーマを積極的に取り入れてください
+${loadAnalyticsInsight() ? loadAnalyticsInsight() : ""}
 
 必ずJSON配列のみを返してください。余計な説明や\`\`\`は不要です。
 

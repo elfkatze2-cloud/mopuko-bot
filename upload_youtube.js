@@ -209,4 +209,58 @@ async function uploadVideo() {
   });
 }
 
-uploadVideo();
+async function runAnalysis() {
+  console.log("\n📊 アナリティクスを取得・分析中...");
+  try {
+    await new Promise((resolve, reject) => {
+      const { execSync } = require("child_process");
+      try {
+        execSync("node fetch_analytics.js", { stdio: "inherit" });
+        execSync("node analyze_analytics.js", { stdio: "inherit" });
+        resolve();
+      } catch (err) {
+        reject(err);
+      }
+    });
+
+    // 分析完了をDiscordに通知
+    const analysisText = fs.readFileSync("output/analytics_analysis.txt", "utf-8");
+    const preview = analysisText.slice(0, 500) + (analysisText.length > 500 ? "…" : "");
+
+    const discordMessage = JSON.stringify({
+      content: `📈 **分析完了！**\n\`\`\`\n${preview}\n\`\`\`\n💡 詳細は \`output/analytics_analysis.txt\` を確認してClaude Codeに渡してください。`,
+    });
+
+    await new Promise((resolve) => {
+      const webhookUrl = new URL(process.env.DISCORD_WEBHOOK_URL);
+      const options = {
+        hostname: webhookUrl.hostname,
+        path: webhookUrl.pathname,
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      };
+      const req = https.request(options, (res) => {
+        res.on("data", () => {});
+        res.on("end", () => {
+          console.log("✅ Discordに分析結果を送信しました！");
+          resolve();
+        });
+      });
+      req.on("error", (err) => {
+        console.error("❌ Discord送信失敗:", err.message);
+        resolve();
+      });
+      req.write(discordMessage);
+      req.end();
+    });
+  } catch (err) {
+    console.error("❌ 分析失敗:", err.message);
+  }
+}
+
+async function main() {
+  await uploadVideo();
+  await runAnalysis();
+}
+
+main();

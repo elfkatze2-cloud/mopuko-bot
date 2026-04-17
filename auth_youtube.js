@@ -8,6 +8,7 @@ const SCOPES = [
   "https://www.googleapis.com/auth/youtube.upload",
   "https://www.googleapis.com/auth/youtube.force-ssl",
   "https://www.googleapis.com/auth/youtube",
+  "https://www.googleapis.com/auth/yt-analytics.readonly",
 ];
 const TOKEN_PATH = "token.json";
 const CREDENTIALS_PATH = "client_secret.json";
@@ -66,3 +67,11 @@ async function authenticate() {
 }
 
 module.exports = { authenticate };
+
+// 直接実行時のみ認証を実行
+if (require.main === module) {
+  authenticate().then(() => {
+    console.log("✅ 認証完了！");
+    process.exit(0);
+  }).catch(console.error);
+}
