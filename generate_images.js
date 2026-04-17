@@ -22,6 +22,19 @@ ${characterPrompt}
 
 各シーンでこのキャラクターがナレーションの内容に合ったポーズや表情・小道具を持っている場面を描写してください。
 背景はシーンの内容に合ったカラフルでポップな背景にしてください。
+
+【構図のルール】
+各シーンに以下の構図をランダムに割り当てて、動画全体に変化をつけてください：
+- front view（正面・全身）
+- back view（後ろ姿・全身）
+- front view（正面・全身）
+- back view（完全に後ろを向いている・顔は見えない）
+- extreme close-up（顔のドアップ・画面全体に顔が広がるくらい大きく・目や嘴がはっきり見える）
+- wide shot（引きの構図・キャラクターが画面の4分の1程度の大きさ・背景を広く見せる・「tiny character in a wide environment」）
+- side view（横からの全身・顔はやや横向きでもOK）
+4シーンで同じ構図が2回以上使われないように調整してください。
+back viewの場合は「facing away from viewer, back turned」をプロンプトに必ず含めてください。
+
 各シーンのプロンプトはJSON配列で返してください。余計な説明や\`\`\`は不要です。
 
 ${scenes}
@@ -131,8 +144,16 @@ async function generateAllImages() {
   fs.writeFileSync("output/image_prompts.txt", promptsLog);
   console.log("✅ プロンプトを output/image_prompts.txt に保存しました。");
 
+  const onlyScenes = process.argv.includes("--scenes") && fs.existsSync("output/regenerate_scenes.txt")
+    ? fs.readFileSync("output/regenerate_scenes.txt", "utf8").split(",").map(n => parseInt(n.trim()))
+    : null;
+
   for (let i = 0; i < scriptData.scenes.length; i++) {
     const scene = scriptData.scenes[i];
+    if (onlyScenes && !onlyScenes.includes(scene.scene_number)) {
+      console.log(`⏭️ シーン${scene.scene_number}はスキップします`);
+      continue;
+    }
     const prompt = prompts[i];
     const outputPath = path.join(imageDir, `scene_${scene.scene_number}.png`);
 

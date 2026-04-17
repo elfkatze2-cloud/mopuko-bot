@@ -4,6 +4,7 @@ const { execSync } = require("child_process");
 const https = require("https");
 const fs = require("fs");
 const path = require("path");
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 
 const client = new Client({
   intents: [
@@ -13,12 +14,51 @@ const client = new Client({
   ],
 });
 
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-let currentThemes = [];
-let waitingForSelection = false;
-let targetChannel = null;
+const HISTORY_FILE = path.join(__dirname, "output", "theme_history.json");
+
+function loadHistory() {
+  if (!fs.existsSync(HISTORY_FILE)) return [];
+  return JSON.parse(fs.readFileSync(HISTORY_FILE, "utf8"));
+}
+
+function saveHistory(theme) {
+  const history = loadHistory();
+  history.push({
+    theme,
+    date: new Date().toISOString().split("T")[0],
+  });
+  const recent = history.slice(-30);
+  fs.writeFileSync(HISTORY_FILE, JSON.stringify(recent, null, 2));
+}
+
+function getRecentThemes(days) {
+  const history = loadHistory();
+  const cutoff = new Date();
+  cutoff.setDate(cutoff.getDate() - days);
+  return history
+    .filter((h) => new Date(h.date) >= cutoff)
+    .map((h) => h.theme);
+}
+
+function getGenreCount() {
+  const history = loadHistory();
+  const cutoff = new Date();
+  cutoff.setDate(cutoff.getDate() - 30);
+  const recent = history.filter((h) => new Date(h.date) >= cutoff);
+  const genres = { 健康: 0, お金: 0, 人間関係: 0, 仕事: 0, 生活: 0 };
+  recent.forEach((h) => {
+    if (h.genre) genres[h.genre] = (genres[h.genre] || 0) + 1;
+  });
+  return genres;
+}
 
 async function generateThemes() {
+  const last15 = getRecentThemes(15);
+  const last7 = getRecentThemes(7);
+  const last3 = getRecentThemes(3);
+  const genreCount = getGenreCount();
+  const minGenre = Object.entries(genreCount).sort((a, b) => a[1] - b[1])[0][0];
+
   const body = JSON.stringify({
     contents: [{
       parts: [{
@@ -31,6 +71,20 @@ async function generateThemes() {
 - 生活習慣・健康・お金・人間関係・仕事などのジャンル
 - タイトルは「○○3選」または「○○な人の特徴3選」などの形式
 - 視聴者の常識を覆す意外な切り口を含む
+
+【重要なルール】
+- 以下のテーマは直近15日間で使用済みのため絶対に避けてください：
+${last15.length > 0 ? last15.map((t) => `  ・${t}`).join("\n") : "  なし"}
+
+- 以下のテーマと似たジャンル・キーワードは直近7日間で使用済みのため避けてください：
+${last7.length > 0 ? last7.map((t) => `  ・${t}`).join("\n") : "  なし"}
+
+- 以下のテーマと似た内容は直近3日間で使用済みのため特に避けてください：
+${last3.length > 0 ? last3.map((t) => `  ・${t}`).join("\n") : "  なし"}
+
+- 今月不足しているジャンル「${minGenre}」を少なくとも1つ含めてください
+- 同じジャンルは2つまでにしてください
+- 季節や時事ネタも積極的に取り入れてください
 
 必ずJSON配列のみを返してください。余計な説明や\`\`\`は不要です。
 
@@ -80,6 +134,8 @@ async function runPipeline(theme, channel) {
       theme
     );
 
+    saveHistory(theme);
+
     await channel.send("🤖 台本を生成しています...");
     execSync("node generate_script.js", { stdio: "inherit" });
 
@@ -126,14 +182,43 @@ async function runPipeline(theme, channel) {
     execSync("node upload_youtube.js", { stdio: "inherit" });
 
     await channel.send("🎉 完了！YouTubeにアップロードされました！");
+    
+    // 固定コメントをDiscordに送信
+    const fs = require("fs");
+    const commentPath = require("path").join(__dirname, "output", "fixed_comment.txt");
+    if (fs.existsSync(commentPath)) {
+      const comment = fs.readFileSync(commentPath, "utf8");
+      await channel.send("📌 以下のコメントをYouTubeに固定してください：\n```\n" + comment + "\n```");
+    }
 
   } catch (err) {
     await channel.send(`❌ エラーが発生しました：${err.message}`);
   }
 }
 
-client.on("ready", () => {
+const CHANNEL_ID = "1220339816877789197";
+
+client.on("ready", async () => {
   console.log(`✅ ${client.user.tag} としてログインしました！`);
+  
+  // 起動時に自動でテーマ候補を送信
+  try {
+    const channel = await client.channels.fetch(CHANNEL_ID);
+    targetChannel = channel;
+    waitingForSelection = true;
+    
+    await channel.send("🌅 おはようございます！今日のテーマ候補を生成しています...");
+    
+    currentThemes = await generateThemes();
+    let reply = "📋 今日のテーマ候補：\n\n";
+    currentThemes.forEach((theme, i) => {
+      reply += `${i + 1}. ${theme}\n`;
+    });
+    reply += "\n番号を入力してください（0: もう一度生成）";
+    await channel.send(reply);
+  } catch (err) {
+    console.error("起動時のテーマ送信に失敗しました:", err.message);
+  }
 });
 
 client.on("messageCreate", async (message) => {
@@ -183,7 +268,24 @@ client.on("messageCreate", async (message) => {
     if (num >= 1 && num <= currentThemes.length) {
       const selected = currentThemes[num - 1];
       waitingForSelection = false;
+      currentThemes = [];
       await runPipeline(selected, message.channel);
+      // 完了後に次のテーマ候補を自動送信
+      waitingForSelection = true;
+      targetChannel = message.channel;
+      await message.channel.send("🤖 次のテーマ候補を生成しています...");
+      try {
+        currentThemes = await generateThemes();
+        let reply = "📋 次のテーマ候補：\n\n";
+        currentThemes.forEach((theme, i) => {
+          reply += `${i + 1}. ${theme}\n`;
+        });
+        reply += "\n番号を入力してください（0: もう一度生成 / !theme で再生成）";
+        await message.channel.send(reply);
+      } catch (err) {
+        await message.channel.send(`❌ テーマ生成エラー：${err.message}`);
+        waitingForSelection = false;
+      }
     }
   }
 });

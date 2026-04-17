@@ -4,7 +4,11 @@ const fs = require("fs");
 const http = require("http");
 const url = require("url");
 
-const SCOPES = ["https://www.googleapis.com/auth/youtube.upload"];
+const SCOPES = [
+  "https://www.googleapis.com/auth/youtube.upload",
+  "https://www.googleapis.com/auth/youtube.force-ssl",
+  "https://www.googleapis.com/auth/youtube",
+];
 const TOKEN_PATH = "token.json";
 const CREDENTIALS_PATH = "client_secret.json";
 

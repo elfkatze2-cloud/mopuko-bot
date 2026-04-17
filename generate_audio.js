@@ -7,7 +7,9 @@ const ELEVENLABS_API_KEY = process.env.ELEVENLABS_API_KEY;
 const VOICE_ID = "lhTvHflPVOqgSWyuWQry";
 
 async function generateAudio() {
-  const rawData = fs.readFileSync("output/script.json", "utf8");
+  const usePrepared = process.argv.includes("--use-prepared");
+  const scriptFile = usePrepared ? "output/script_for_audio.json" : "output/script.json";
+  const rawData = fs.readFileSync(scriptFile, "utf8");
   const scriptData = JSON.parse(rawData);
 
   const audioDir = path.join("output", "audio");
@@ -21,15 +23,38 @@ async function generateAudio() {
     console.log(`🎙️ シーン${scene.scene_number}の音声を生成中...`);
 
     const body = JSON.stringify({
-      text: scene.narration,
+      text: usePrepared ? scene.narration.replace(/\[pause\]/g, "").replace(/\s+/g, " ").trim() : scene.narration
+        .replace(/\[pause\]/g, "")
+        .replace(/【([^】]*)】/g, " $1 ")
+        .replace(/（[^）]*）/g, "")
+        .replace(/\([^)]*\)/g, "")
+        .replace(/おりこうさん/g, "「お利口」")
+        .replace(/お利口さん/g, "「お利口」")
+        .replace(/おりこうだね/g, "「お利口」だね")
+        .replace(/おりこうだ/g, "「お利口」だ")
+        .replace(/(?<![一-龯])家(?![一-龯])/g, "いえ")
+        .replace(/通勤/g, "つうきん")
+        .replace(/重曹/g, "じゅうそう")
+        .replace(/SNS/g, "エスエヌエス")
+        .replace(/YouTube/g, "ユーチューブ")
+        .replace(/AI/g, "エーアイ")
+        .replace(/\s+/g, " ")
+        .trim(),
       model_id: "eleven_v3",
       language_code: "ja",
+      apply_text_normalization: "auto",
       voice_settings: {
         stability: 0.4,
         similarity_boost: 0.8,
         style: 0.0,
-        speed: 2.0,
+        speed: 1.2,
       },
+      pronunciation_dictionary_locators: [
+        {
+          pronunciation_dictionary_id: process.env.PRONUNCIATION_DICT_ID,
+          version_id: process.env.PRONUNCIATION_DICT_VERSION,
+        },
+      ],
     });
 
     const outputPath = path.join(audioDir, `scene_${scene.scene_number}.mp3`);

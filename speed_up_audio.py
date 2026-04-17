@@ -13,7 +13,7 @@ for file in sorted(files):
     command = [
         "ffmpeg", "-y",
         "-i", input_path,
-        "-filter:a", f"atempo={SPEED}",
+        "-filter_complex", f"[0:a]atempo={SPEED}[sped];aevalsrc=0:d=0.3[silence];[sped][silence]concat=n=2:v=0:a=1",
         temp_path
     ]
 

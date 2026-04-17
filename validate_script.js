@@ -29,25 +29,7 @@ function validateAndFormat(scriptData) {
     process.exit(1);
   }
 
-// ③ 発音改善のための置換
-  scriptData.scenes.forEach((scene) => {
-    scene.narration = scene.narration
-      // 数字の読み方
-      .replace(/6割/g, "ろくわり")
-      .replace(/7割/g, "ななわり")
-      .replace(/8割/g, "はちわり")
-      .replace(/1割/g, "いちわり")
-      .replace(/2割/g, "にわり")
-      // よく間違える単語
-      .replace(/即レス/g, "そくれす")
-      .replace(/絞る/g, "しぼる")
-      .replace(/スッキリ/g, "すっきり")
-      .replace(/切れるからね/g, "きれるからね")
-      // 英数字混じりの表現
-      .replace(/SNS/g, "エスエヌエス")
-      .replace(/YouTube/g, "ユーチューブ")
-      .replace(/AI/g, "エーアイ");
-  });
+// 発音改善の置換はgenerate_audio.jsで行うため、ここでは削除
 
   // ③ 投稿文の整形
   scriptData.post_text = scriptData.post_text
@@ -71,7 +53,8 @@ const formattedData = validateAndFormat(scriptData);
 // 整形済みデータを上書き保存
 fs.writeFileSync(
   "output/script.json",
-  JSON.stringify(formattedData, null, 2)
+  JSON.stringify(formattedData, null, 2),
+  "utf8"
 );
 
 console.log("✅ output/script.json を更新しました。");
