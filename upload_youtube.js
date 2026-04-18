@@ -166,47 +166,81 @@ async function uploadVideo() {
     `https://www.youtube.com/watch?v=${response.data.id}`
   );
 
-  // 固定コメントを生成してDiscordに送信
-  const comment = await generateComment(scriptData.title, scriptData.post_text);
-  console.log("\n📌 以下のコメントをYouTubeに固定してください：");
-  console.log("─────────────────────────────");
-  console.log(comment);
-  console.log("─────────────────────────────");
-  
-  // コメントをファイルに保存
-  fs.writeFileSync("output/fixed_comment.txt", comment);
-  console.log("💾 output/fixed_comment.txt に保存しました");
-
-  // Discordに送信
   const videoUrl = `https://www.youtube.com/watch?v=${response.data.id}`;
-  const discordMessage = JSON.stringify({
-    content: `📌 **固定コメント**\n\`\`\`\n${comment}\n\`\`\`\n🎬 動画URL：${videoUrl}`,
-  });
 
-  await new Promise((resolve, reject) => {
-    const webhookUrl = new URL(process.env.DISCORD_WEBHOOK_URL);
-    const options = {
-      hostname: webhookUrl.hostname,
-      path: webhookUrl.pathname,
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-    };
-    const req = https.request(options, (res) => {
-      res.on("data", () => {});
-      res.on("end", () => {
-        console.log("✅ Discordに固定コメントを送信しました！");
+  const commentMode = fs.existsSync("output/comment_mode.txt")
+    ? fs.readFileSync("output/comment_mode.txt", "utf8").trim()
+    : "normal";
+
+  if (commentMode === "guide") {
+    // guideモード：3つ目の内容をDiscordに送信
+    const scene4Content = scriptData.scene4_content || "(内容取得失敗)";
+    console.log(`\n📝 コメント欄用3つ目：${scene4Content}`);
+
+    const discordMessage = JSON.stringify({
+      content: `📝 **コメント欄用3つ目：${scene4Content}**\n🎬 動画URL：${videoUrl}`,
+    });
+
+    await new Promise((resolve) => {
+      const webhookUrl = new URL(process.env.DISCORD_WEBHOOK_URL);
+      const options = {
+        hostname: webhookUrl.hostname,
+        path: webhookUrl.pathname,
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      };
+      const req = https.request(options, (res) => {
+        res.on("data", () => {});
+        res.on("end", () => {
+          console.log("✅ Discordにコメント欄用3つ目を送信しました！");
+          resolve();
+        });
+      });
+      req.on("error", (err) => {
+        console.error("❌ Discord送信失敗:", err.message);
         resolve();
       });
+      req.write(discordMessage);
+      req.end();
     });
-    req.on("error", (err) => {
-      console.error("❌ Discord送信失敗:", err.message);
-      resolve();
+  } else {
+    // normalモード：2択の固定コメントを生成してDiscordに送信
+    const comment = await generateComment(scriptData.title, scriptData.post_text);
+    console.log("\n📌 以下のコメントをYouTubeに固定してください：");
+    console.log("─────────────────────────────");
+    console.log(comment);
+    console.log("─────────────────────────────");
+
+    fs.writeFileSync("output/fixed_comment.txt", comment);
+    console.log("💾 output/fixed_comment.txt に保存しました");
+
+    const discordMessage = JSON.stringify({
+      content: `📌 **固定コメント**\n\`\`\`\n${comment}\n\`\`\`\n🎬 動画URL：${videoUrl}`,
     });
-    req.write(discordMessage);
-    req.end();
-  });
+
+    await new Promise((resolve) => {
+      const webhookUrl = new URL(process.env.DISCORD_WEBHOOK_URL);
+      const options = {
+        hostname: webhookUrl.hostname,
+        path: webhookUrl.pathname,
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      };
+      const req = https.request(options, (res) => {
+        res.on("data", () => {});
+        res.on("end", () => {
+          console.log("✅ Discordに固定コメントを送信しました！");
+          resolve();
+        });
+      });
+      req.on("error", (err) => {
+        console.error("❌ Discord送信失敗:", err.message);
+        resolve();
+      });
+      req.write(discordMessage);
+      req.end();
+    });
+  }
 }
 
 async function runAnalysis() {

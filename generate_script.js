@@ -4,8 +4,16 @@ const fs = require("fs");
 
 const client = new Anthropic();
 
-async function generateScript(topic, systemPromptFile = "prompts/system_prompt.txt", retryCount = 0) {
-  const systemPrompt = fs.readFileSync(systemPromptFile, "utf8");
+async function generateScript(topic, systemPromptFile = "prompts/system_prompt.txt", commentMode = "normal", retryCount = 0) {
+  let systemPrompt = fs.readFileSync(systemPromptFile, "utf8");
+
+  if (commentMode === "guide") {
+    systemPrompt += `\n\n【シーン4の特別指示（今回はguideモード）】
+- シーン4の narration では3つ目の内容を紹介せず「気になる人はコメント欄をチェックしてね！」などで誘導する
+- シーン4の caption は「③コメント欄へ！」にする
+- 決め台詞「これで君も今日から、おりこうだね！」は必ず入れる
+- 本来シーン4で紹介するはずだった3つ目の内容を "scene4_content" フィールドに記載すること（JSONのトップレベルに追加）`;
+  }
 
   if (retryCount > 0) {
     console.log(`🔄 再生成中... (${retryCount}回目)`);
@@ -53,7 +61,7 @@ async function generateScript(topic, systemPromptFile = "prompts/system_prompt.t
 
     // 3回までリトライ
     if (retryCount < 3) {
-      return generateScript(topic, retryCount + 1);
+      return generateScript(topic, systemPromptFile, commentMode, retryCount + 1);
     }
     throw err;
   }
@@ -65,6 +73,11 @@ const slot = fs.existsSync("output/slot.txt")
   : "evening";
 const isMorning = slot === "morning";
 const systemPromptFile = isMorning ? "prompts/system_prompt_morning.txt" : "prompts/system_prompt.txt";
+
+const commentMode = Math.random() < 1 / 3 ? "guide" : "normal";
+fs.writeFileSync("output/comment_mode.txt", commentMode);
+
 console.log(`📝 テーマ：${theme}`);
 console.log(`📝 使用プロンプト：${systemPromptFile}`);
-generateScript(theme, systemPromptFile);
+console.log(`🎯 コメントモード：${commentMode}`);
+generateScript(theme, systemPromptFile, commentMode);
