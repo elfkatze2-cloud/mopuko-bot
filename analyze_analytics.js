@@ -85,6 +85,41 @@ ${v.averageViewPercentage !== undefined ? `- 視聴維持率：${v.averageViewPe
   fs.writeFileSync(outputPath, analysis, "utf-8");
   console.log(`\n✅ 分析結果を保存しました：${outputPath}`);
 
+  // 2段階目：改善案を9つにまとめてJSON化
+  console.log("\n🤖 改善案をまとめています...");
+  const summaryPrompt = `
+以下の分析レポートをもとに、優先度と実装難易度を考慮して改善案を最大9つ抽出してください。
+
+${analysis}
+
+以下のJSON形式のみで返してください。余計な説明や\`\`\`は不要です。
+
+[
+  {
+    "id": 1,
+    "title": "改善案の短いタイトル（20文字以内）",
+    "detail": "具体的に何をどう変えるかの説明（100文字以内）",
+    "priority": "高・中・低のいずれか",
+    "difficulty": "高・中・低のいずれか"
+  }
+]
+`;
+
+  const summaryResult = await model.generateContent(summaryPrompt);
+  const summaryText = summaryResult.response.text().trim();
+
+  try {
+    const match = summaryText.match(/\[[\s\S]*\]/);
+    if (!match) throw new Error("JSON配列が見つかりません");
+    const improvements = JSON.parse(match[0]);
+
+    const improvementsPath = path.join(__dirname, "output", "improvements.json");
+    fs.writeFileSync(improvementsPath, JSON.stringify(improvements, null, 2), "utf-8");
+    console.log(`✅ 改善案を保存しました：${improvementsPath}`);
+  } catch (err) {
+    console.error("❌ 改善案のJSON化に失敗しました:", err.message);
+  }
+
   return analysis;
 }
 
