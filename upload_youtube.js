@@ -68,8 +68,11 @@ ${postText}
         try {
           const result = JSON.parse(data);
           const comment = result.candidates[0].content.parts[0].text.trim();
-          console.log("💬 生成されたコメント：", comment);
-          resolve(comment);
+if (comment.length > 200) {
+  throw new Error("コメントが異常に長いです");
+}
+console.log("💬 生成されたコメント：", comment);
+resolve(comment);
         } catch (err) {
           console.error("❌ コメント生成失敗:", err.message);
           resolve("今日から君もおりこうだね！🌸 みんなはどっち派？コメントで教えてね！");
