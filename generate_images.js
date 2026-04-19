@@ -26,11 +26,8 @@ ${characterPrompt}
 【構図のルール】
 各シーンに以下の構図をランダムに割り当てて、動画全体に変化をつけてください：
 - front view（正面・全身）
-- back view（後ろ姿・全身）
-- front view（正面・全身）
-- back view（完全に後ろを向いている・顔は見えない）
+- back view（後ろ姿・全身・「facing away from viewer, back turned」を必ず含める）
 - extreme close-up（顔のドアップ・画面全体に顔が広がるくらい大きく・目や嘴がはっきり見える）
-- wide shot（引きの構図・キャラクターが画面の4分の1程度の大きさ・背景を広く見せる・「tiny character in a wide environment」）
 - side view（横からの全身・顔はやや横向きでもOK）
 4シーンで同じ構図が2回以上使われないように調整してください。
 back viewの場合は「facing away from viewer, back turned」をプロンプトに必ず含めてください。
@@ -78,7 +75,7 @@ async function generateImage(prompt, outputPath) {
   const body = JSON.stringify({
     contents: [{
       parts: [{
-        text: `Generate ONE single illustration. NO comic strips. NO panels. NO multiple frames. NO split screen. NO collage. Just one continuous image with no dividing lines. Vertical 9:16 aspect ratio. ${prompt}`
+        text: `Generate ONE single illustration. NO comic strips. NO panels. NO multiple frames. NO split screen. NO collage. NO horizontal dividing lines. NO sequential images. NO storyboard. Just one continuous seamless image. Vertical 9:16 aspect ratio. ${prompt}`
       }]
     }],
     generationConfig: { responseModalities: ["IMAGE", "TEXT"] }
