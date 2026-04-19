@@ -78,7 +78,7 @@ async function generateImage(prompt, outputPath) {
   const body = JSON.stringify({
     contents: [{
       parts: [{
-        text: `Generate a vertical 9:16 aspect ratio image for a short video. ${prompt}`
+        text: `Generate ONE single illustration. NO comic strips. NO panels. NO multiple frames. NO split screen. NO collage. Just one continuous image with no dividing lines. Vertical 9:16 aspect ratio. ${prompt}`
       }]
     }],
     generationConfig: { responseModalities: ["IMAGE", "TEXT"] }

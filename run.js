@@ -120,16 +120,17 @@ function applyReplacements() {
   console.log("✅ output/script_for_audio.json を生成しました。");
 }
 
-async function generateAudioStep() {
+async function generateAudioStep(waitForEdit = false) {
   // 置換処理を適用してscript_for_audio.jsonを生成
   applyReplacements();
 
-  // ユーザーに編集の機会を与える
-  console.log("\n📝 output/script_for_audio.json を確認・編集してください。");
-  console.log("   編集が完了したらEnterを押してください（編集不要な場合もEnterを押してください）");
-
-  const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
-  await new Promise((resolve) => rl.question("", () => { rl.close(); resolve(); }));
+  // モード3のみ編集の機会を与える
+  if (waitForEdit) {
+    console.log("\n📝 output/script_for_audio.json を確認・編集してください。");
+    console.log("   編集が完了したらEnterを押してください（編集不要な場合もEnterを押してください）");
+    const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
+    await new Promise((resolve) => rl.question("", () => { rl.close(); resolve(); }));
+  }
 
   // 音声生成（script_for_audio.jsonを使用・置換なし）
   console.log("\n🎙️ ステップ③ 音声を生成しています...");
@@ -160,7 +161,7 @@ async function generateAudioStep() {
 
 async function regenerateFromAudio() {
   console.log("\n🔄 音声から再生成します...");
-  await generateAudioStep();
+  await generateAudioStep(true);
   renderVideo();
   console.log("【手順1】YouTubeにアップロード（video-botフォルダで実行）");
   console.log("  node upload_youtube.js");
@@ -172,7 +173,6 @@ async function regenerateImages(sceneNumbers) {
   execSync("node generate_images.js --scenes", { stdio: "inherit" });
   fs.unlinkSync("output/regenerate_scenes.txt");
   copyScriptToRemotion();
-  await generateAudioStep();
   renderVideo();
   console.log("【手順1】YouTubeにアップロード（video-botフォルダで実行）");
   console.log("  node upload_youtube.js");
