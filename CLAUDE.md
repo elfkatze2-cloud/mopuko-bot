@@ -51,6 +51,11 @@
 - ✅ BGM追加（remotion/public/sounds/bgm.mp3・volume: 0.05・ループ再生）
 - ✅ [pause]タグをElevenLabsに渡す前に除去（余計な音声の混入を防止）
 - ✅ ffmpegで末尾に0.3秒の無音を追加（シーン切り替わりの間を確保）
+- ✅ improve.js：分析からの改善案選択インターフェース完成（1〜9が改善案・0が能動的依頼・sがスキップ）
+- ✅ 台本構成変更（伏せ字フック導入・「実は～」削除・「最後の1つが～」削除・決め台詞短縮）
+- ✅ comment_mode機能追加（33%確率でguideモード・output/comment_mode.txtに保存）
+- ✅ guideモード時：3つ目をDiscordに送信・normalモード時：2択固定コメントを生成
+- ✅ コメント生成の異常レスポンス対策（200文字超でエラー）
 
 ## 現在の実行手順
 
@@ -117,6 +122,10 @@ node upload_youtube.js
 - `remotion/src/Composition.tsx`：背景画像・テロップ・音声・BGMの合成
 - `remotion/src/Root.tsx`：動画サイズ（1080x1920）・長さの設定
 - `remotion/public/sounds/bgm.mp3`：BGM音源（ループ再生・volume: 0.05）
+- `video-bot/improve.js`：improvements.jsonを読み込んで改善案を選択→improvement_instruction.txtに保存→Claude Codeを起動
+- `video-bot/output/improvements.json`：Geminiが生成した改善案（最大9つ・JSON形式）
+- `video-bot/output/comment_mode.txt`：normalまたはguide（33%の確率でguide）
+- `video-bot/output/improvement_instruction.txt`：Claude Codeへの改善指示（一時ファイル）
 
 ## 重要な技術的決定とその理由
 - **音声生成にElevenLabs v3を使用**：Hina音声（lhTvHflPVOqgSWyuWQry）
@@ -192,6 +201,8 @@ voice_settings: {
 - @remotion/google-fontsのバージョンが他のremotionパッケージと1つずれている（動作には影響なし）
 
 ## 次にやること（優先順位順）
+- [ ] 動画の長さを25秒以内に収める調整
+- [ ] 伏せ字フックの強化（プロンプト調整）
 - [ ] 効果音の挿入（シーン切り替わり時）※良い音源が見つかり次第
 - [ ] アフィリエイトリンクの自動選定・貼り付け
 - [ ] ギンバトキャラのLINEスタンプ作成・販売
