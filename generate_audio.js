@@ -22,8 +22,14 @@ async function generateAudio() {
   for (const scene of scriptData.scenes) {
     console.log(`🎙️ シーン${scene.scene_number}の音声を生成中...`);
 
-    const body = JSON.stringify({
-      text: usePrepared ? scene.narration.replace(/\[pause\]/g, "").replace(/\s+/g, " ").trim() : scene.narration
+    let processedText;
+    if (usePrepared) {
+      processedText = scene.narration
+        .replace(/\[pause\]/g, "")
+        .replace(/\s+/g, " ")
+        .trim();
+    } else {
+      processedText = scene.narration
         .replace(/\[pause\]/g, "")
         .replace(/【([^】]*)】/g, " $1 ")
         .replace(/（[^）]*）/g, "")
@@ -39,7 +45,13 @@ async function generateAudio() {
         .replace(/YouTube/g, "ユーチューブ")
         .replace(/AI/g, "エーアイ")
         .replace(/\s+/g, " ")
-        .trim(),
+        .trim();
+    }
+
+    console.log(`📝 シーン${scene.scene_number}のテキスト：`, processedText);
+
+    const body = JSON.stringify({
+      text: processedText,
       model_id: "eleven_v3",
       language_code: "ja",
       apply_text_normalization: "auto",
