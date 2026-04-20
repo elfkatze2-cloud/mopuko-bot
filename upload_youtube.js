@@ -169,6 +169,23 @@ async function uploadVideo() {
     `https://www.youtube.com/watch?v=${response.data.id}`
   );
 
+  // アップロード完了後にテーマ履歴を保存
+  const selectedThemePath = path.join(__dirname, "output", "selected_theme.txt");
+  if (fs.existsSync(selectedThemePath)) {
+    const theme = fs.readFileSync(selectedThemePath, "utf8").trim();
+    const historyPath = path.join(__dirname, "output", "theme_history.json");
+    const history = fs.existsSync(historyPath)
+      ? JSON.parse(fs.readFileSync(historyPath, "utf8"))
+      : [];
+    history.push({
+      theme,
+      date: new Date().toISOString().split("T")[0],
+    });
+    const recent = history.slice(-30);
+    fs.writeFileSync(historyPath, JSON.stringify(recent, null, 2));
+    console.log(`✅ テーマ履歴を保存しました：${theme}`);
+  }
+
   const videoUrl = `https://www.youtube.com/watch?v=${response.data.id}`;
 
   const commentMode = fs.existsSync("output/comment_mode.txt")

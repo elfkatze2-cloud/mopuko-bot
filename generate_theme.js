@@ -196,9 +196,8 @@ async function selectTheme() {
       const index = parseInt(answer) - 1;
       if (index >= 0 && index < themes.length) {
         const selected = themes[index];
-        console.log(`\n✅ 選択したテーマ：${selected}`);
-        saveHistory(selected);
-        resolve(selected);
+      console.log(`\n✅ 選択したテーマ：${selected}`);
+      resolve(selected);
       } else {
         console.log("無効な番号です。もう一度試してください。");
         resolve(await selectTheme());
