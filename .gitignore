@@ -2,6 +2,9 @@
 .env
 client_secret.json
 token.json
+tiktok_token.json
+tiktok_verifier.txt
+get_token.js
 
 # 生成ファイル
 output/
