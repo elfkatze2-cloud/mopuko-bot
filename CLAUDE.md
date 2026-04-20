@@ -56,6 +56,9 @@
 - ✅ comment_mode機能追加（33%確率でguideモード・output/comment_mode.txtに保存）
 - ✅ guideモード時：3つ目をDiscordに送信・normalモード時：2択固定コメントを生成
 - ✅ コメント生成の異常レスポンス対策（200文字超でエラー）
+- ✅ TikTok Developer登録・Sandboxでのアップロード動作確認
+- ✅ TikTok審査申請済み（承認待ち）
+- ✅ GitHub Pages（利用規約・プライバシーポリシー）公開
 
 ## 現在の実行手順
 
@@ -126,6 +129,11 @@ node upload_youtube.js
 - `video-bot/output/improvements.json`：Geminiが生成した改善案（最大9つ・JSON形式）
 - `video-bot/output/comment_mode.txt`：normalまたはguide（33%の確率でguide）
 - `video-bot/output/improvement_instruction.txt`：Claude Codeへの改善指示（一時ファイル）
+- `video-bot/auth_tiktok.js`：TikTok OAuth認証（PKCE対応）
+- `video-bot/upload_tiktok.js`：TikTokに動画をアップロード
+- `video-bot/tiktok_token.json`：TikTokアクセストークン（Gitに上げない）
+- `docs/terms.html`：利用規約（GitHub Pages公開）
+- `docs/privacy.html`：プライバシーポリシー（GitHub Pages公開）
 
 ## 重要な技術的決定とその理由
 - **音声生成にElevenLabs v3を使用**：Hina音声（lhTvHflPVOqgSWyuWQry）
@@ -203,6 +211,10 @@ voice_settings: {
 ## 次にやること（優先順位順）
 - [ ] 動画の長さを25秒以内に収める調整
 - [ ] 伏せ字フックの強化（プロンプト調整）
+- [ ] 効果音の挿入（シーン切り替わり時）※良い音源が見つかり次第
+- [ ] アフィリエイトリンクの自動選定・貼り付け
+- [ ] ギンバトキャラのLINEスタンプ作成・販売
+- [ ] TikTok審査承認後：privacy_levelをPUBLIC_TO_EVERYONEに変更・upload_youtube.jsと連携
 - [ ] 効果音の挿入（シーン切り替わり時）※良い音源が見つかり次第
 - [ ] アフィリエイトリンクの自動選定・貼り付け
 - [ ] ギンバトキャラのLINEスタンプ作成・販売
