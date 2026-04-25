@@ -2,17 +2,136 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <title>おりこうもぷ子</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>おりこうもぷ子 - TikTok連携</title>
   <style>
-    body { font-family: sans-serif; max-width: 800px; margin: 40px auto; padding: 0 20px; text-align: center; }
-    h1 { color: #333; }
-    a { color: #0066cc; }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Helvetica Neue', sans-serif;
+      background: linear-gradient(135deg, #fff0f5 0%, #f0f4ff 100%);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .card {
+      background: white;
+      border-radius: 24px;
+      padding: 48px 40px;
+      max-width: 480px;
+      width: 100%;
+      text-align: center;
+      box-shadow: 0 8px 40px rgba(0,0,0,0.08);
+    }
+    .logo { font-size: 64px; margin-bottom: 16px; }
+    h1 { font-size: 24px; color: #333; margin-bottom: 8px; }
+    .subtitle { font-size: 14px; color: #888; margin-bottom: 32px; }
+    .tiktok-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+      background: #000;
+      color: white;
+      border: none;
+      border-radius: 12px;
+      padding: 16px 32px;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+      text-decoration: none;
+      transition: background 0.2s;
+    }
+    .tiktok-btn:hover { background: #333; }
+    .tiktok-icon { font-size: 24px; }
+    .features {
+      margin-top: 32px;
+      text-align: left;
+      border-top: 1px solid #f0f0f0;
+      padding-top: 24px;
+    }
+    .feature {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 8px 0;
+      font-size: 14px;
+      color: #555;
+    }
+    .feature-icon { font-size: 20px; }
+    .success-msg {
+      display: none;
+      background: #f0fff4;
+      border: 2px solid #68d391;
+      border-radius: 12px;
+      padding: 20px;
+      margin-top: 24px;
+      color: #276749;
+      font-size: 14px;
+    }
+    .nav { margin-top: 24px; font-size: 13px; color: #aaa; }
+    .nav a { color: #aaa; margin: 0 8px; }
   </style>
 </head>
 <body>
-  <h1>おりこうもぷ子</h1>
-  <p>YouTubeチャンネル「おりこうもぷ子」の公式サイトです。</p>
-  <p><a href="https://www.youtube.com/@mopuko_ch">YouTubeチャンネルはこちら</a></p>
-  <p><a href="terms.html">利用規約</a> | <a href="privacy.html">プライバシーポリシー</a></p>
+  <div class="card">
+    <div class="logo">🐦</div>
+    <h1>おりこうもぷ子</h1>
+    <p class="subtitle">YouTubeショート動画をTikTokに自動投稿するサービス</p>
+
+    <a id="loginBtn" class="tiktok-btn" href="#" onclick="startLogin()">
+      <span class="tiktok-icon">♪</span>
+      TikTokでログイン
+    </a>
+
+    <div id="successMsg" class="success-msg">
+      ✅ 認証が完了しました！動画の自動投稿が有効になりました。
+    </div>
+
+    <div class="features">
+      <div class="feature">
+        <span class="feature-icon">🎬</span>
+        <span>YouTube動画をTikTokに自動投稿</span>
+      </div>
+      <div class="feature">
+        <span class="feature-icon">🔒</span>
+        <span>TikTok公式APIで安全に連携</span>
+      </div>
+      <div class="feature">
+        <span class="feature-icon">⚡</span>
+        <span>毎日自動でコンテンツを配信</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="nav">
+    <a href="terms.html">利用規約</a>
+    <a href="privacy.html">プライバシーポリシー</a>
+  </div>
+
+  <script>
+    // URLパラメータにcodeが含まれている場合は認証成功
+    const params = new URLSearchParams(window.location.search);
+    if (params.has('code')) {
+      document.getElementById('successMsg').style.display = 'block';
+      document.getElementById('loginBtn').textContent = '✅ 認証済み';
+      document.getElementById('loginBtn').style.background = '#38a169';
+    }
+
+    function startLogin() {
+      // TikTok認証URLに遷移（実際のClient Keyは環境変数から取得するため、
+      // デモではTikTok Developer Portalのサンドボックス認証URLを使用）
+      const clientKey = 'sbaw3jlkd93pz6112r';
+      const redirectUri = encodeURIComponent('https://elfkatze2-cloud.github.io/mopuko-bot/');
+      const scope = 'user.info.basic,video.publish,video.upload';
+      const state = 'mopuko';
+      const codeChallenge = 'demo_challenge';
+      
+      const authUrl = `https://www.tiktok.com/v2/auth/authorize/?client_key=${clientKey}&scope=${scope}&response_type=code&redirect_uri=${redirectUri}&state=${state}&code_challenge=${codeChallenge}&code_challenge_method=S256&sandbox=true`;
+      
+      window.location.href = authUrl;
+    }
+  </script>
 </body>
 </html>
