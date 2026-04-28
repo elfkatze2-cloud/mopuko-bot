@@ -59,6 +59,9 @@
 - ✅ TikTok Developer登録・Sandboxでのアップロード動作確認
 - ✅ TikTok審査申請済み（承認待ち）
 - ✅ GitHub Pages（利用規約・プライバシーポリシー）公開
+- ✅ YouTubeアップロードフローを「限定公開→コメント自動投稿→予約投稿化」に変更（コメント自動投稿が可能に）
+- ✅ guideモード時、台本生成時に scene4_comment（絵文字付き3つ目）を自動生成
+- ✅ postComment関数から効かないsetModerationStatus呼び出しを削除（YouTube APIにピン留め機能がないため）
 
 ## 現在の実行手順
 
@@ -103,13 +106,13 @@ node upload_youtube.js
 
 ## 各ファイルの役割
 - `video-bot/generate_theme.js`：Geminiでテーマ候補生成（季節反映・履歴管理・朝夜切り替え）
-- `video-bot/generate_script.js`：ClaudeAPIで台本をJSON生成（朝夜でプロンプト切り替え）
+- `video-bot/generate_script.js`：ClaudeAPIで台本をJSON生成（朝夜でプロンプト切り替え・guideモード時はscene4_content/scene4_commentも生成）
 - `video-bot/validate_script.js`：シーン数・文字数チェック・投稿文整形のみ（発音置換はしない）
 - `video-bot/generate_audio.js`：ElevenLabs v3で音声生成（[pause]除去・--use-preparedオプションで置換スキップ）
 - `video-bot/speed_up_audio.py`：ffmpegで1.3倍速変換＋末尾0.3秒無音追加
 - `video-bot/generate_images.js`：Gemini APIで画像生成（--scenesオプションで指定シーンのみ生成）
 - `video-bot/auth_youtube.js`：YouTube認証（OAuth2.0）
-- `video-bot/upload_youtube.js`：YouTubeに動画をアップロード・固定コメントをDiscordに送信・アップロード後に自動でAnalytics分析を実行
+- `video-bot/upload_youtube.js`：YouTubeに動画をアップロード（限定公開→コメント自動投稿→予約投稿化の3ステップ）・コメント内容をDiscordに通知・アップロード後に自動でAnalytics分析を実行
 - `video-bot/fetch_analytics.js`：YouTube Analytics API + Data APIで対象動画のデータを取得→output/analytics_report.jsonに保存
 - `video-bot/analyze_analytics.js`：analytics_report.jsonをGeminiで分析→改善案をoutput/analytics_analysis.txtに保存・Discordに通知
 - `video-bot/test_analytics.js`：Analytics APIのデバッグ用一時ファイル（削除可）
@@ -203,7 +206,7 @@ voice_settings: {
   - Composition.tsx → []を除去・【】をパースして強調表示
 
 ## 既知の問題・改善点
-- YouTubeのコメント投稿APIは予約投稿動画には使えないため手動で固定コメントを貼り付ける（Discordに自動送信済み）
+- YouTube Data API v3 はコメントの**ピン留め**機能をサポートしていないため、ピン留めだけはYouTube Studioで手動操作が必要（コメント投稿自体は限定公開状態で自動化済み）
 - ffmpegパス：`C:\Users\elfka\OneDrive\デスクトップ\ffmpeg-8.1-essentials_build\bin`
 - remotion/public/のscript.jsonとvideo-bot/output/のscript.jsonを混同しないよう注意
 - @remotion/google-fontsのバージョンが他のremotionパッケージと1つずれている（動作には影響なし）

@@ -87,7 +87,7 @@ resolve(comment);
 
 async function postComment(youtube, videoId, comment) {
   try {
-    const response = await youtube.commentThreads.insert({
+    await youtube.commentThreads.insert({
       part: ["snippet"],
       requestBody: {
         snippet: {
@@ -100,16 +100,10 @@ async function postComment(youtube, videoId, comment) {
         },
       },
     });
-    console.log("✅ コメント投稿完了！");
-
-    // コメントを固定
-    await youtube.comments.setModerationStatus({
-      id: response.data.snippet.topLevelComment.id,
-      moderationStatus: "published",
-    });
-    console.log("📌 コメントを固定しました！");
+    console.log("✅ コメント投稿完了！（ピン留めはYouTube Studioで手動操作してください）");
   } catch (err) {
     console.error("❌ コメント投稿失敗:", err.message);
+    throw err;
   }
 }
 
@@ -136,9 +130,9 @@ async function uploadVideo() {
   const slot = fs.existsSync("output/slot.txt")
     ? fs.readFileSync("output/slot.txt", "utf8").trim()
     : "evening";
-  const publishAt = getPublishTime(slot);
 
-  console.log("📤 YouTubeにアップロード中...");
+  // ─── Step 1: 限定公開でアップロード ───
+  console.log("📤 YouTubeに限定公開でアップロード中...");
   console.log("タイトル：", title);
 
   const response = await youtube.videos.insert({
@@ -152,9 +146,8 @@ async function uploadVideo() {
         defaultLanguage: "ja",
       },
       status: {
-        privacyStatus: "private",
+        privacyStatus: "unlisted",
         selfDeclaredMadeForKids: false,
-        publishAt,
       },
     },
     media: {
@@ -162,12 +155,11 @@ async function uploadVideo() {
     },
   });
 
-  console.log("✅ アップロード完了！");
-  console.log("動画ID：", response.data.id);
-  console.log(
-    "URL：",
-    `https://www.youtube.com/watch?v=${response.data.id}`
-  );
+  const videoId = response.data.id;
+  const videoUrl = `https://www.youtube.com/watch?v=${videoId}`;
+  console.log("✅ 限定公開でアップロード完了！");
+  console.log("動画ID：", videoId);
+  console.log("URL：", videoUrl);
 
   // アップロード完了後にテーマ履歴を保存
   const selectedThemePath = path.join(__dirname, "output", "selected_theme.txt");
@@ -186,81 +178,79 @@ async function uploadVideo() {
     console.log(`✅ テーマ履歴を保存しました：${theme}`);
   }
 
-  const videoUrl = `https://www.youtube.com/watch?v=${response.data.id}`;
-
+  // ─── Step 2: コメントを生成・自動投稿 ───
   const commentMode = fs.existsSync("output/comment_mode.txt")
     ? fs.readFileSync("output/comment_mode.txt", "utf8").trim()
     : "normal";
 
+  let comment;
   if (commentMode === "guide") {
-    // guideモード：3つ目の内容をDiscordに送信
-    const scene4Content = scriptData.scene4_content || "(内容取得失敗)";
-    console.log(`\n📝 コメント欄用3つ目：${scene4Content}`);
-
-    const discordMessage = JSON.stringify({
-      content: `📝 **コメント欄用3つ目：${scene4Content}**\n🎬 動画URL：${videoUrl}`,
-    });
-
-    await new Promise((resolve) => {
-      const webhookUrl = new URL(process.env.DISCORD_WEBHOOK_URL);
-      const options = {
-        hostname: webhookUrl.hostname,
-        path: webhookUrl.pathname,
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-      };
-      const req = https.request(options, (res) => {
-        res.on("data", () => {});
-        res.on("end", () => {
-          console.log("✅ Discordにコメント欄用3つ目を送信しました！");
-          resolve();
-        });
-      });
-      req.on("error", (err) => {
-        console.error("❌ Discord送信失敗:", err.message);
-        resolve();
-      });
-      req.write(discordMessage);
-      req.end();
-    });
+    // guideモード：scene4_commentをそのまま投稿
+    comment = scriptData.scene4_comment
+      || `③ ${scriptData.scene4_content || "(3つ目の内容取得失敗)"}`;
+    console.log(`\n📝 guideモード：scene4_comment を投稿します`);
   } else {
-    // normalモード：2択の固定コメントを生成してDiscordに送信
-    const comment = await generateComment(scriptData.title, scriptData.post_text);
-    console.log("\n📌 以下のコメントをYouTubeに固定してください：");
-    console.log("─────────────────────────────");
-    console.log(comment);
-    console.log("─────────────────────────────");
+    // normalモード：Geminiで2択コメントを生成して投稿
+    comment = await generateComment(scriptData.title, scriptData.post_text);
+  }
 
-    fs.writeFileSync("output/fixed_comment.txt", comment);
-    console.log("💾 output/fixed_comment.txt に保存しました");
+  console.log("\n📌 投稿するコメント：");
+  console.log("─────────────────────────────");
+  console.log(comment);
+  console.log("─────────────────────────────");
 
-    const discordMessage = JSON.stringify({
-      content: `📌 **固定コメント**\n\`\`\`\n${comment}\n\`\`\`\n🎬 動画URL：${videoUrl}`,
-    });
+  fs.writeFileSync("output/fixed_comment.txt", comment);
+  console.log("💾 output/fixed_comment.txt に保存しました");
 
-    await new Promise((resolve) => {
-      const webhookUrl = new URL(process.env.DISCORD_WEBHOOK_URL);
-      const options = {
-        hostname: webhookUrl.hostname,
-        path: webhookUrl.pathname,
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-      };
-      const req = https.request(options, (res) => {
-        res.on("data", () => {});
-        res.on("end", () => {
-          console.log("✅ Discordに固定コメントを送信しました！");
-          resolve();
-        });
-      });
-      req.on("error", (err) => {
-        console.error("❌ Discord送信失敗:", err.message);
+  await postComment(youtube, videoId, comment);
+
+  // ─── Step 3: 予約投稿に変更 ───
+  const publishAt = getPublishTime(slot);
+  console.log("\n📅 予約投稿に変更中...");
+  await youtube.videos.update({
+    part: ["status"],
+    requestBody: {
+      id: videoId,
+      status: {
+        privacyStatus: "private",
+        publishAt: publishAt,
+        selfDeclaredMadeForKids: false,
+      },
+    },
+  });
+  console.log("✅ 予約投稿に変更完了！");
+
+  // ─── Discord通知 ───
+  const modeLabel = commentMode === "guide"
+    ? "📝 **guideモード（3つ目の内容を自動投稿）**"
+    : "📌 **normalモード（2択コメントを自動投稿）**";
+
+  const discordMessage = JSON.stringify({
+    content: `${modeLabel}\n\`\`\`\n${comment}\n\`\`\`\n🎬 動画URL：${videoUrl}\n💡 ピン留めはYouTube Studioで手動操作してください。`,
+  });
+
+  await new Promise((resolve) => {
+    const webhookUrl = new URL(process.env.DISCORD_WEBHOOK_URL);
+    const options = {
+      hostname: webhookUrl.hostname,
+      path: webhookUrl.pathname,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+    };
+    const req = https.request(options, (res) => {
+      res.on("data", () => {});
+      res.on("end", () => {
+        console.log("✅ Discordに通知しました！");
         resolve();
       });
-      req.write(discordMessage);
-      req.end();
     });
-  }
+    req.on("error", (err) => {
+      console.error("❌ Discord送信失敗:", err.message);
+      resolve();
+    });
+    req.write(discordMessage);
+    req.end();
+  });
 }
 
 async function runAnalysis() {
