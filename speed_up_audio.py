@@ -1,5 +1,8 @@
 import os
+import sys
 import subprocess
+
+sys.stdout.reconfigure(encoding="utf-8")
 
 SPEED = 1.3  # 速度倍率
 AUDIO_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "output", "audio")

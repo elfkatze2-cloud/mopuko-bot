@@ -1,6 +1,9 @@
 import json
 import os
+import sys
 from mutagen.mp3 import MP3
+
+sys.stdout.reconfigure(encoding="utf-8")
 
 audio_dir = os.path.join("output", "audio")
 durations = {}
