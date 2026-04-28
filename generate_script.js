@@ -75,7 +75,8 @@ const slot = fs.existsSync("output/slot.txt")
 const isMorning = slot === "morning";
 const systemPromptFile = isMorning ? "prompts/system_prompt_morning.txt" : "prompts/system_prompt.txt";
 
-const commentMode = Math.random() < 1 / 3 ? "guide" : "normal";
+const commentMode = process.env.FORCE_COMMENT_MODE
+  || (Math.random() < 1 / 3 ? "guide" : "normal");
 fs.writeFileSync("output/comment_mode.txt", commentMode);
 
 console.log(`📝 テーマ：${theme}`);
