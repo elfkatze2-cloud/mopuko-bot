@@ -14,33 +14,43 @@ function question(rl, prompt) {
 }
 
 async function main() {
-  const rl = readline.createInterface({
-    input: process.stdin,
-    output: process.stdout,
-  });
+  // 環境変数で対話プロンプトをスキップ可能（テスト/自動化用）
+  // RUN_SLOT=morning|evening, RUN_SKIP_THEME=1 で既存のselected_theme.txtを使用
+  let mode;
+  if (process.env.RUN_SLOT === "morning") mode = "1";
+  else if (process.env.RUN_SLOT === "evening") mode = "2";
 
-  console.log("\n📅 実行モードを選択してください：");
-  console.log("  1. 朝（7:00投稿）- 最初から全部実行");
-  console.log("  2. 夜（20:00投稿）- 最初から全部実行");
-  console.log("  3. 音声から再生成（台本・画像はそのまま）");
-  console.log("  4. 画像を指定して再生成");
+  if (!mode) {
+    const rl = readline.createInterface({
+      input: process.stdin,
+      output: process.stdout,
+    });
 
-  const mode = await question(rl, "\n番号を入力してください: ");
+    console.log("\n📅 実行モードを選択してください：");
+    console.log("  1. 朝（7:00投稿）- 最初から全部実行");
+    console.log("  2. 夜（20:00投稿）- 最初から全部実行");
+    console.log("  3. 音声から再生成（台本・画像はそのまま）");
+    console.log("  4. 画像を指定して再生成");
 
-  // モード③：音声から再生成
-  if (mode === "3") {
+    mode = await question(rl, "\n番号を入力してください: ");
+
+    // モード③：音声から再生成
+    if (mode === "3") {
+      rl.close();
+      await regenerateFromAudio();
+      return;
+    }
+
+    // モード④：画像を指定して再生成
+    if (mode === "4") {
+      const input = await question(rl, "再生成するシーン番号をカンマ区切りで入力してください（例：1,3）: ");
+      rl.close();
+      const sceneNumbers = input.split(",").map(s => parseInt(s.trim())).filter(n => !isNaN(n));
+      await regenerateImages(sceneNumbers);
+      return;
+    }
+
     rl.close();
-    await regenerateFromAudio();
-    return;
-  }
-
-  // モード④：画像を指定して再生成
-  if (mode === "4") {
-    const input = await question(rl, "再生成するシーン番号をカンマ区切りで入力してください（例：1,3）: ");
-    rl.close();
-    const sceneNumbers = input.split(",").map(s => parseInt(s.trim())).filter(n => !isNaN(n));
-    await regenerateImages(sceneNumbers);
-    return;
   }
 
   // モード①②：最初から全部実行
@@ -54,16 +64,21 @@ async function main() {
   } else {
     console.log("無効な入力です。夜（20:00）で進めます");
   }
- rl.close();
 
 fs.writeFileSync("output/slot.txt", slot);
 
-// テーマ選択
-console.log("\n🎯 テーマを選択しています...");
-const { selectTheme } = require("./generate_theme");
-const selectedTheme = await selectTheme();
-if (!selectedTheme) return;
-fs.writeFileSync("output/selected_theme.txt", selectedTheme);
+// テーマ選択（RUN_SKIP_THEME=1なら既存のselected_theme.txtをそのまま使用）
+let selectedTheme;
+if (process.env.RUN_SKIP_THEME === "1" && fs.existsSync("output/selected_theme.txt")) {
+  selectedTheme = fs.readFileSync("output/selected_theme.txt", "utf8").trim();
+  console.log(`\n✅ 既存テーマを使用：${selectedTheme}`);
+} else {
+  console.log("\n🎯 テーマを選択しています...");
+  const { selectTheme } = require("./generate_theme");
+  selectedTheme = await selectTheme();
+  if (!selectedTheme) return;
+  fs.writeFileSync("output/selected_theme.txt", selectedTheme);
+}
 
   // ① 台本生成
   console.log("\n📝 ステップ① 台本を生成しています...");

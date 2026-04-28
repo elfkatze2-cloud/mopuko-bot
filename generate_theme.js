@@ -215,7 +215,7 @@ async function main() {
   console.log("次のステップ: node generate_script.js を実行してください");
 }
 
-module.exports = { selectTheme };
+module.exports = { selectTheme, generateThemes };
 
 if (require.main === module) {
   main();
